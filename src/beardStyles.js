@@ -1,44 +1,38 @@
 /* ==========================================================================
-   TRIMLY.AR - Burun Kanadından Dudak Kenarına Işın İzleme (Ray Tracing) Sakal Engine'i
+   TRIMLY.AR - Doğal Genişlikte Ray-Traced Sakal Engine'i
    ========================================================================== */
 
 export const BEARD_STYLES = [
   {
     id: 'goatee',
-    name: 'Mükemmel Keçi Sakalı (Ray-Traced Master Goatee)',
-    description: 'Burun kanadından dudak kenarlarına uzanan ışınların çenede birleşmesiyle oluşan kusursuz simetrik keçi sakalı.',
+    name: 'Mükemmel Keçi Sakalı (Master Goatee)',
+    description: 'Ağız kenarlarını sıkıştırmayan, burun kanadından çeneye doğal genişleyen simetrik sakal.',
     icon: 'circle-dot',
     drawGuide: (ctx, lm, options) => {
-      // ----------------------------------------------------------------------
-      // 1. BURUN KANADINDAN DUDAK KENARINA IŞIN (RAY TRACING) GEOMETRİSİ
-      // ----------------------------------------------------------------------
       const nostrilL = lm[102] || lm[49];  // Sol Burun Kanadı
       const nostrilR = lm[331] || lm[279]; // Sağ Burun Kanadı
       const mouthL = lm[61];               // Sol Dudak Kenarı
       const mouthR = lm[291];              // Sağ Dudak Kenarı
       const nBase = lm[2];                 // Burun Tabanı
       const chin = lm[152];                // Çene Ucu
+      const jawL = lm[148];                // Sol Çene Noktası
+      const jawR = lm[377];                // Sağ Çene Noktası
 
       if (!nostrilL || !nostrilR || !mouthL || !mouthR) return;
 
-      // Sol Işın Vektörü (Burun Kanadından Dudak Kenarına Doğru İnen Işın)
-      const rayLVectorX = mouthL.x - nostrilL.x;
-      const rayLVectorY = mouthL.y - nostrilL.y;
+      // ----------------------------------------------------------------------
+      // 1. AĞIZ KENARLARININ DIŞINA DOĞAL GENİŞLEYEN IŞIN HESABI (No Pinching!)
+      // ----------------------------------------------------------------------
+      const mouthWidth = Math.abs(mouthR.x - mouthL.x);
+      const outerMargin = Math.max(18, mouthWidth * 0.35); // Ağız dışı rahat marj
 
-      // Sağ Işın Vektörü
-      const rayRVectorX = mouthR.x - nostrilR.x;
-      const rayRVectorY = mouthR.y - nostrilR.y;
+      // Bıyık Üst Sol / Sağ Sınır Noktaları (Burun Kanadının Dışında)
+      const topLeftX = Math.min(nostrilL.x, mouthL.x - outerMargin * 0.6);
+      const topRightX = Math.max(nostrilR.x, mouthR.x + outerMargin * 0.6);
 
-      // Işınların Devam Ederek Çeneye İnen Kesim Noktaları (Ray Extension to Jaw)
-      const rayExtendScale = 1.75; // Işının çene hattına kadar uzama katsayısı
-      const jawIntersectL = {
-        x: nostrilL.x + rayLVectorX * rayExtendScale,
-        y: nostrilL.y + rayLVectorY * rayExtendScale
-      };
-      const jawIntersectR = {
-        x: nostrilR.x + rayRVectorX * rayExtendScale,
-        y: nostrilR.y + rayRVectorY * rayExtendScale
-      };
+      // Yanak İniş Noktaları (Ağız kenarlarının rahatça DIŞINDA)
+      const midLeftX = mouthL.x - outerMargin;
+      const midRightX = mouthR.x + outerMargin;
 
       ctx.save();
       ctx.shadowBlur = 0;
@@ -46,52 +40,48 @@ export const BEARD_STYLES = [
       ctx.lineJoin = 'round';
 
       // ----------------------------------------------------------------------
-      // 2. REFERANS IŞIN ÇİZGİLERİ (Nostril -> Mouth -> Jaw Ray Visualizers)
+      // 2. REFERANS KESİK HİZALAMA ÇİZGİLERİ [A]
       // ----------------------------------------------------------------------
       ctx.save();
       ctx.setLineDash([4, 6]);
       ctx.strokeStyle = 'rgba(247, 244, 235, 0.45)';
       ctx.lineWidth = 1.5;
 
-      // Sol Işın
       ctx.beginPath();
-      ctx.moveTo(nostrilL.x, nostrilL.y);
-      ctx.lineTo(jawIntersectL.x, jawIntersectL.y);
+      ctx.moveTo(topLeftX, nostrilL.y);
+      ctx.lineTo(midLeftX, chin.y);
       ctx.stroke();
 
-      // Sağ Işın
       ctx.beginPath();
-      ctx.moveTo(nostrilR.x, nostrilR.y);
-      ctx.lineTo(jawIntersectR.x, jawIntersectR.y);
+      ctx.moveTo(topRightX, nostrilR.y);
+      ctx.lineTo(midRightX, chin.y);
       ctx.stroke();
       ctx.restore();
 
       // ----------------------------------------------------------------------
-      // 3. IŞINLARIN ÇENEDE OLUŞTURDUĞU MÜKEMMEL GOATEE ÇİZGİSİ
+      // 3. KEÇİ SAKALI KONTUR HATTI (Dudakları Daraltmayan Rahat Form)
       // ----------------------------------------------------------------------
       ctx.lineWidth = options.lineWidth || 3.5;
       ctx.strokeStyle = '#D4AF37'; // Mat Berber Altını
 
       ctx.beginPath();
-      // Burun altından Bıyık Üst Sınırı boyunca başla
-      ctx.moveTo(nostrilL.x, nBase.y - 2);
-      ctx.lineTo(nostrilR.x, nBase.y - 2);
+      // Bıyık Üst Çizgisi
+      ctx.moveTo(topLeftX, nBase.y - 2);
+      ctx.lineTo(topRightX, nBase.y - 2);
 
-      // Sağ Işın Hattını Takip Et (Burun Kanadı -> Dudak Kenarı -> Çene Noktası)
-      ctx.lineTo(mouthR.x + (mouthR.x - nostrilR.x) * 0.2, mouthR.y);
-      ctx.lineTo(jawIntersectR.x, jawIntersectR.y);
+      // Sağ Yanak İnişi (Ağız Kenarının Dışından Çene Kemiğine)
+      ctx.quadraticCurveTo(midRightX, mouthR.y, jawR.x, jawR.y);
 
-      // Çenede Işınların Birleştiği Alt Kavis (Çene Altı Birleşimi)
-      ctx.quadraticCurveTo(chin.x, chin.y + 6, jawIntersectL.x, jawIntersectL.y);
+      // Çene Altı Kavis Birleşimi
+      ctx.quadraticCurveTo(chin.x, chin.y + 10, jawL.x, jawL.y);
 
-      // Sol Işın Hattını Takip Et (Çene Noktası -> Dudak Kenarı -> Burun Kanadı)
-      ctx.lineTo(mouthL.x - (nostrilL.x - mouthL.x) * 0.2, mouthL.y);
-      ctx.lineTo(nostrilL.x, nBase.y - 2);
+      // Sol Yanak Yükselişi (Çene Kemiğinden Ağız Kenarının Dışına)
+      ctx.quadraticCurveTo(midLeftX, mouthL.y, topLeftX, nBase.y - 2);
       ctx.closePath();
       ctx.stroke();
 
       // ----------------------------------------------------------------------
-      // 4. ADEM ELMASI ÜSTÜ BOYUN KAVİSİ (3B Dönüş Uyumlu)
+      // 4. ADEM ELMASI ÜSTÜ BOYUN KAVİSİ (Çenenin Tam Altında)
       // ----------------------------------------------------------------------
       const jawIndices = [172, 136, 150, 149, 176, 148, 152, 377, 378, 379, 365, 397];
       const vecX = (chin.x - lm[10].x) * 0.14;
