@@ -99,7 +99,8 @@ export class ARRenderer {
     // Render AR Guidelines
     if (pixelLandmarks) {
       ctx.save();
-      ctx.globalAlpha = this.opacity;
+      ctx.globalAlpha = 1.0; // 100% solid skin-attached line
+      ctx.shadowBlur = 0;
 
       const activeStyle = BEARD_STYLES.find((s) => s.id === this.currentStyleId) || BEARD_STYLES[0];
       
@@ -111,9 +112,6 @@ export class ARRenderer {
       });
 
       ctx.restore();
-
-      // Draw subtle symmetry axis line
-      this.drawSymmetryAxis(ctx, pixelLandmarks);
     }
 
     ctx.restore();
