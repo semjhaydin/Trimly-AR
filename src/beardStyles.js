@@ -1,93 +1,67 @@
 /* ==========================================================================
-   TRIMLY.AR - Mükemmel Keçi Sakalı Algoritması (Kafa Yönelimli 3B U-Çerçeve)
+   TRIMLY.AR - Real Simple Classic Goatee (KISS Principle)
    ========================================================================== */
 
 export const BEARD_STYLES = [
   {
     id: 'goatee',
-    name: 'Mükemmel Keçi Sakalı (Master Goatee)',
-    description: 'Burun kanatlarından aşağı inen dikey ışınlar, alt dudak altı birleşimi ve Adem elması boyun kavisi.',
+    name: 'Klasik Keçi Sakalı (Classic Goatee)',
+    description: 'Sadece temiz, sade ve zarif keçi sakalı konturu ve boyun çizgisi.',
     icon: 'circle-dot',
     drawGuide: (ctx, lm, options) => {
-      // ── Essential Landmarks ─────────────────────────────────────────
-      const nostrilL = lm[102] || lm[49];   // Sol burun kanadı dış kenarı
-      const nostrilR = lm[331] || lm[279];  // Sağ burun kanadı dış kenarı
-      const lowerLip = lm[17];              // Alt dudak alt noktası
-      const chin     = lm[152];             // Çene ucu
-      const forehead = lm[10];              // Alın noktası
+      const mL = lm[61];   // Sol dudak kenarı
+      const mR = lm[291];  // Sağ dudak kenarı
+      const nBase = lm[2]; // Burun altı / Bıyık üstü
+      const chin = lm[152];// Çene ucu
+      const jawL = lm[148];// Sol çene kemiği
+      const jawR = lm[377];// Sağ çene kemiği
 
-      if (!nostrilL || !nostrilR || !lowerLip || !chin || !forehead) return;
+      if (!mL || !mR || !nBase || !chin || !jawL || !jawR) return;
 
-      // ── Color Selection ─────────────────────────────────────────────
       const isGold = options.colorMode === 'gold';
       const strokeColor = isGold ? '#FFD700' : '#000000';
-      const lw = options.lineWidth || 4.5;
+      const lw = options.lineWidth || 4;
 
       ctx.save();
       ctx.shadowBlur = 0;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+
+      // ----------------------------------------------------------------------
+      // 1. TEMİZ VE SADE KEÇİ SAKALI KONTURU (Simple Elegant Loop)
+      // ----------------------------------------------------------------------
       ctx.lineWidth = lw;
       ctx.strokeStyle = strokeColor;
 
-      // ── Face Orientation Vector (Calculates head tilt angle) ────────
-      const dx = chin.x - forehead.x;
-      const dy = chin.y - forehead.y;
-      const faceLen = Math.hypot(dx, dy) || 1;
+      const mouthWidth = Math.abs(mR.x - mL.x);
+      const outerOffset = Math.max(14, mouthWidth * 0.3);
 
-      // Unit vector pointing straight down along the face vertical axis
-      const dirX = dx / faceLen;
-      const dirY = dy / faceLen;
-
-      // Distance from nostril down to the bottom boundary (below lower lip)
-      const goateeHeight = Math.abs(lowerLip.y - nostrilL.y) + Math.abs(chin.y - lowerLip.y) * 0.35;
-
-      // Top-Left (Sol burun kanadı)
-      const topLeftX = nostrilL.x;
-      const topLeftY = nostrilL.y;
-
-      // Bottom-Left (Sol çizgi sonu)
-      const bottomLeftX = nostrilL.x + dirX * goateeHeight;
-      const bottomLeftY = nostrilL.y + dirY * goateeHeight;
-
-      // Top-Right (Sağ burun kanadı)
-      const topRightX = nostrilR.x;
-      const topRightY = nostrilR.y;
-
-      // Bottom-Right (Sağ çizgi sonu)
-      const bottomRightX = nostrilR.x + dirX * goateeHeight;
-      const bottomRightY = nostrilR.y + dirY * goateeHeight;
-
-      // ── [A] SOL DİKEY ÇİZGİ (Burun kanadından yüz aksı boyunca aşağı) ────
       ctx.beginPath();
-      ctx.moveTo(topLeftX, topLeftY);
-      ctx.lineTo(bottomLeftX, bottomLeftY);
+      // Bıyık Üstü
+      ctx.moveTo(mL.x - outerOffset * 0.5, nBase.y);
+      ctx.lineTo(mR.x + outerOffset * 0.5, nBase.y);
+      // Sağ Yanak İnişi
+      ctx.quadraticCurveTo(mR.x + outerOffset, mR.y, jawR.x, jawR.y);
+      // Çene Altı Kavis
+      ctx.quadraticCurveTo(chin.x, chin.y + 10, jawL.x, jawL.y);
+      // Sol Yanak Yükselişi
+      ctx.quadraticCurveTo(mL.x - outerOffset, mL.y, mL.x - outerOffset * 0.5, nBase.y);
+      ctx.closePath();
       ctx.stroke();
 
-      // ── [A] SAĞ DİKEY ÇİZGİ (Burun kanadından yüz aksı boyunca aşağı) ────
-      ctx.beginPath();
-      ctx.moveTo(topRightX, topRightY);
-      ctx.lineTo(bottomRightX, bottomRightY);
-      ctx.stroke();
-
-      // ── [B] ALT YATAY ÇİZGİ (İki dikey halkanın alt uçlarını birleştirir) ──
-      ctx.beginPath();
-      ctx.moveTo(bottomLeftX, bottomLeftY);
-      ctx.lineTo(bottomRightX, bottomRightY);
-      ctx.stroke();
-
-      // ── [C] BOYUN KAVİS ÇİZGİSİ (Adem Elmasının 2 Parmak Üstü) ─────────
-      const neckDist = faceLen * 0.15;
+      // ----------------------------------------------------------------------
+      // 2. TEMİZ BOYUN ÇİZGİSİ (Simple Neck Arc)
+      // ----------------------------------------------------------------------
       const jawIndices = [172, 136, 150, 149, 176, 148, 152, 377, 378, 379, 365, 397];
+      const neckOffset = Math.abs(chin.y - lm[10].y) * 0.14;
 
+      ctx.lineWidth = Math.max(3, lw * 0.85);
       ctx.beginPath();
       jawIndices.forEach((idx, i) => {
         const pt = lm[idx];
         if (!pt) return;
-        const px = pt.x + dirX * neckDist;
-        const py = pt.y + dirY * neckDist;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+        if (i === 0) ctx.moveTo(pt.x, pt.y + neckOffset);
+        else ctx.lineTo(pt.x, pt.y + neckOffset);
       });
       ctx.stroke();
 
