@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Trimly.ar | Minimalist WebAR Sakal Rehberi</title>
+  <meta name="description" content="Akıllı yüz analizi ve AR sakal kılavuz çizgileriyle doğrudan tarayıcı üzerinden ücretsiz tıraş rehberi." />
+  <!-- Google Fonts: Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- MediaPipe CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="dark-theme">
+
+  <!-- Sanal Banyo Feneri Overlay -->
+  <div id="ringLightOverlay" class="ring-light-overlay hidden"></div>
+
+  <!-- Ana Konteyner -->
+  <div class="app-container">
+    
+    <!-- Minimalist Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">
+          <i data-lucide="scissors"></i>
+        </div>
+        <span class="brand-name">Trimly<span class="brand-ext">.ar</span></span>
+      </div>
+
+      <!-- Live Face Analysis Badge -->
+      <div id="faceScanBadge" class="face-scan-badge pulse-glow">
+        <i data-lucide="scan-face"></i>
+        <span id="faceShapeText">Yüz Taranıyor</span>
+      </div>
+
+      <!-- Minimal Utility Icons -->
+      <div class="header-actions">
+        <button id="btnToggleMirror" class="icon-btn active" title="Ayna Modu (Yatay Çevir)">
+          <i data-lucide="flip-horizontal"></i>
+        </button>
+        <button id="btnToggleRingLight" class="icon-btn" title="Işık Desteği">
+          <i data-lucide="sun"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Kamera & AR Viewport -->
+    <main class="viewport-section">
+      <div class="viewport-wrapper" id="viewportWrapper">
+        <video id="webcamVideo" playsinline webkit-playsinline muted class="webcam-video"></video>
+        <canvas id="arCanvas" class="ar-canvas"></canvas>
+
+        <!-- Laser Scan Animation Line -->
+        <div id="scanLaser" class="scan-laser">
+          <div class="laser-line"></div>
+        </div>
+
+        <!-- Camera Start Prompt -->
+        <div id="cameraStartOverlay" class="camera-start-overlay">
+          <div class="start-card glass-panel">
+            <div class="start-icon-wrapper">
+              <i data-lucide="camera"></i>
+            </div>
+            <h2>AR Sakal Aynası</h2>
+            <p>Yüz yapınızı tarayalım, sakal hatlarınızı doğrudan yüzünüze oturtalım.</p>
+            
+            <button id="btnStartCamera" class="btn-primary btn-glow">
+              <i data-lucide="video"></i> Kamerayı Aç ve Taramayı Başlat
+            </button>
+            <button id="btnDemoMode" class="btn-secondary">
+              <i data-lucide="play-circle"></i> Kamerasız Demoyu Dene
+            </button>
+          </div>
+        </div>
+
+        <!-- Floating Minimal Status Toast -->
+        <div id="hudOverlay" class="hud-overlay hidden">
+          <div id="smartTipToast" class="smart-tip-toast glass-panel">
+            <span id="lockStatusDot" class="status-dot"></span>
+            <span id="smartTipText">Kameraya düz bakın. Yüz hatlarınız taranıyor...</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Sleek Minimal Control Dock -->
+    <footer id="controlDock" class="control-dock glass-panel">
+      <!-- Sakal Stili Karousel -->
+      <div class="style-carousel" id="styleCarousel">
+        <!-- JavaScript ile doldurulacak -->
+      </div>
+
+      <!-- 3 Temel Aksiyon Butonu -->
+      <div class="primary-actions-bar">
+        <button id="btnToggleLock" class="main-action-btn lock-btn" title="Köpük Modu (Çizgiyi Kilitler)">
+          <i data-lucide="lock"></i>
+          <span id="lockBtnText">Köpük Modu (Kilitle)</span>
+        </button>
+
+        <button id="btnToggleZoneMode" class="main-action-btn active" title="Kesim Haritası">
+          <i data-lucide="palette"></i>
+          <span>Bölgeler</span>
+        </button>
+
+        <button id="btnCaptureSnapshot" class="main-action-btn capture-btn" title="Fotoğraf Çek">
+          <i data-lucide="camera"></i>
+          <span>Fotoğraf</span>
+        </button>
+      </div>
+    </footer>
+
+    <!-- Analysis Modal -->
+    <div id="analysisModal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel">
+        <button id="btnCloseAnalysis" class="modal-close-btn">&times;</button>
+        <div class="modal-header">
+          <div class="modal-icon">
+            <i data-lucide="sparkles"></i>
+          </div>
+          <h3>Yüz Yapısı Analiziniz</h3>
+        </div>
+        <div class="modal-body">
+          <div class="analysis-grid">
+            <div class="analysis-stat">
+              <span class="stat-label">Yüz Şekli</span>
+              <span id="modalFaceShape" class="stat-value highlight">Kare</span>
+            </div>
+            <div class="analysis-stat">
+              <span class="stat-label">Oran</span>
+              <span id="modalFaceRatio" class="stat-value">1.18</span>
+            </div>
+            <div class="analysis-stat">
+              <span class="stat-label">Çene</span>
+              <span id="modalJawType" class="stat-value">Keskin</span>
+            </div>
+          </div>
+          <div class="recommendation-box">
+            <h4><i data-lucide="thumbs-up"></i> Önerilen Stil:</h4>
+            <p id="modalRecommendationText">Yüz hatlarınız kare. **Keçi Sakalı (Goatee)** çenenizin keskinliğini vurgulayarak simetrik bir hava katar.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btnApplyRecommendation" class="btn-primary full-width">
+            <i data-lucide="check"></i> Önerilen Stili Uygula
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Snapshot Preview Modal -->
+    <div id="snapshotModal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel snapshot-card">
+        <button id="btnCloseSnapshot" class="modal-close-btn">&times;</button>
+        <h3>Tıraş Rehberi Fotoğrafınız</h3>
+        <div class="snapshot-preview-container">
+          <img id="snapshotImg" src="" alt="Trimly AR Snapshot" />
+        </div>
+        <div class="modal-footer row">
+          <a id="btnDownloadSnapshot" class="btn-primary" download="trimly-shave-guide.png">
+            <i data-lucide="download"></i> Fotoğrafı İndir
+          </a>
+          <button id="btnCloseSnapshotBtn" class="btn-secondary">Kapat</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
