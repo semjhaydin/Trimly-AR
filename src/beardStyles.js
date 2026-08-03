@@ -1,65 +1,98 @@
 /* ==========================================================================
-   TRIMLY.AR - Ultra-Stilize, Keskin ve Basit Berber Çizgi Engine'i
+   TRIMLY.AR - Anatomik Doğru Keçi Sakalı (Dar Üst, Geniş Çene Tabanı)
    ========================================================================== */
 
 export const BEARD_STYLES = [
   {
     id: 'goatee',
     name: 'Mükemmel Keçi Sakalı (Master Goatee)',
-    description: 'Sıfır titreme ile cilde tam oturan yüksek görünürlüklü sade keçi sakalı kılavuzu.',
+    description: 'Bıyıkta dar başlayan, çeneye doğru genişleyen %100 anatomik keçi sakalı.',
     icon: 'circle-dot',
     drawGuide: (ctx, lm, options) => {
-      const nostrilL = lm[102] || lm[49];
-      const nostrilR = lm[331] || lm[279];
-      const mouthL = lm[61];
-      const mouthR = lm[291];
-      const nBase = lm[2];
-      const chin = lm[152];
-      const jawL = lm[148];
-      const jawR = lm[377];
+      const nostrilL = lm[102] || lm[49];  // Sol Burun Kanadı
+      const nostrilR = lm[331] || lm[279]; // Sağ Burun Kanadı
+      const mouthL = lm[61];               // Sol Dudak Kenarı
+      const mouthR = lm[291];              // Sağ Dudak Kenarı
+      const nBase = lm[2];                 // Burun Tabanı
+      const chin = lm[152];                // Çene Ucu
+      const jawL = lm[148];                // Sol Çene Noktası
+      const jawR = lm[377];                // Sağ Çene Noktası
 
       if (!nostrilL || !nostrilR || !mouthL || !mouthR) return;
 
+      // ----------------------------------------------------------------------
+      // 1. ANATOMİK HİZALAMA: Üstte Dar (Burun Genişliği), Aşağıda Geniş Çene
+      // ----------------------------------------------------------------------
       const mouthWidth = Math.abs(mouthR.x - mouthL.x);
-      const margin = Math.max(16, mouthWidth * 0.32);
+      const outerFlaring = mouthWidth * 0.38; // Çeneye doğru dışa genişleme marjı
 
-      const topLeftX = Math.min(nostrilL.x, mouthL.x - margin * 0.5);
-      const topRightX = Math.max(nostrilR.x, mouthR.x + margin * 0.5);
-      const midLeftX = mouthL.x - margin;
-      const midRightX = mouthR.x + margin;
+      // Bıyık Üstü (Burun Hizası - Dar ve Düzenli)
+      const topLeftX = nostrilL.x;
+      const topRightX = nostrilR.x;
+
+      // Ağız Kenarı ve Çene Tabanı (Dışa Doğru Genişleyen Doğal Sakal Alanı)
+      const outerCheekLeftX = mouthL.x - outerFlaring;
+      const outerCheekRightX = mouthR.x + outerFlaring;
+      const chinBaseLeftX = jawL.x;
+      const chinBaseRightX = jawR.x;
 
       ctx.save();
       ctx.shadowBlur = 0;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // 1. ANA KEÇİ SAKALI ÇİZGİSİ (Yüksek Görünürlüklü Berber Altını)
+      // ----------------------------------------------------------------------
+      // 2. MANTIKSAL BEYAZ KESİK REFERANS IŞINLARI [A]
+      // ----------------------------------------------------------------------
+      ctx.save();
+      ctx.setLineDash([4, 6]);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 1.5;
+
+      // Sol Referans Işını
+      ctx.beginPath();
+      ctx.moveTo(topLeftX, nostrilL.y);
+      ctx.lineTo(outerCheekLeftX, chin.y);
+      ctx.stroke();
+
+      // Sağ Referans Işını
+      ctx.beginPath();
+      ctx.moveTo(topRightX, nostrilR.y);
+      ctx.lineTo(outerCheekRightX, chin.y);
+      ctx.stroke();
+      ctx.restore();
+
+      // ----------------------------------------------------------------------
+      // 3. KEÇİ SAKALI KONTUR HATI (Üstte Dar Bıyık -> Aşağıda Geniş Çene)
+      // ----------------------------------------------------------------------
       ctx.lineWidth = options.lineWidth || 4;
-      ctx.strokeStyle = '#FFD700'; // Yüksek Görünürlüklü Parlak Altın
+      ctx.strokeStyle = '#FFD700'; // Parlak Berber Altını
 
       ctx.beginPath();
-      // Bıyık Üst Çizgisi
+      // Bıyık Üst Çizgisi (Burun genişliğinde dar)
       ctx.moveTo(topLeftX, nBase.y - 2);
       ctx.lineTo(topRightX, nBase.y - 2);
 
-      // Sağ Yanak İnişi
-      ctx.quadraticCurveTo(midRightX, mouthR.y, jawR.x, jawR.y);
+      // Sağ Yanak İnişi (Dışa doğru genişleyerek dudak kenarından çeneye iner)
+      ctx.quadraticCurveTo(outerCheekRightX, mouthR.y, chinBaseRightX, jawR.y);
 
-      // Çene Altı Kavis Birleşimi
-      ctx.quadraticCurveTo(chin.x, chin.y + 10, jawL.x, jawL.y);
+      // Çene Altı Kavis Birleşimi (Geniş çene tabanı)
+      ctx.quadraticCurveTo(chin.x, chin.y + 10, chinBaseLeftX, jawL.y);
 
-      // Sol Yanak Yükselişi
-      ctx.quadraticCurveTo(midLeftX, mouthL.y, topLeftX, nBase.y - 2);
+      // Sol Yanak Yükselişi (Dışa geniş çeneden bıyık üstüne tırmanış)
+      ctx.quadraticCurveTo(outerCheekLeftX, mouthL.y, topLeftX, nBase.y - 2);
       ctx.closePath();
       ctx.stroke();
 
-      // 2. TEMİZ BOYUN ÇİZGİSİ (Yüksek Kontrastlı Beyaz Hat)
+      // ----------------------------------------------------------------------
+      // 4. BOYUN TEMİZLEME ÇİZGİSİ (Net Beyaz Hat)
+      // ----------------------------------------------------------------------
       const jawIndices = [172, 136, 150, 149, 176, 148, 152, 377, 378, 379, 365, 397];
       const vecX = (chin.x - lm[10].x) * 0.14;
       const vecY = (chin.y - lm[10].y) * 0.14;
 
       ctx.lineWidth = 3.5;
-      ctx.strokeStyle = '#FFFFFF'; // Keskin Net Beyaz
+      ctx.strokeStyle = '#FFFFFF';
 
       ctx.beginPath();
       jawIndices.forEach((idx, i) => {
