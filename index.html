@@ -4,7 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Trimly.ar | Minimalist WebAR Sakal Rehberi</title>
-  <meta name="description" content="Akıllı yüz analizi ve AR sakal kılavuz çizgileriyle doğrudan tarayıcı üzerinden ücretsiz tıraş rehberi." />
+  <meta name="description" content="MediaPipe 3D yüz takibi ve hassas siyah rehber çizgileriyle tarayıcı tabanlı profesyonel sakal tıraş asistanı." />
+  <meta name="theme-color" content="#0D0E12" />
+  
+  <!-- OpenGraph / Social Meta Tags -->
+  <meta property="og:title" content="Trimly.ar | WebAR Sakal Tıraşı Rehberi" />
+  <meta property="og:description" content="Kişisel yüz analizi ve AR siyah tıraş rehber çizgileriyle 0 indirme, %100 ücretsiz dijital ayna." />
+  <meta property="og:type" content="website" />
+
   <!-- Google Fonts: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,13 +25,13 @@
 </head>
 <body class="dark-theme">
 
-  <!-- Sanal Banyo Feneri Overlay -->
+  <!-- Sanal Banyo Işığı Overlay -->
   <div id="ringLightOverlay" class="ring-light-overlay hidden"></div>
 
-  <!-- Ana Konteyner -->
+  <!-- Ana Uygulama Konteyneri -->
   <div class="app-container">
     
-    <!-- Minimalist Header -->
+    <!-- Minimal Header -->
     <header class="app-header">
       <div class="brand">
         <div class="logo-icon">
@@ -33,18 +40,18 @@
         <span class="brand-name">Trimly<span class="brand-ext">.ar</span></span>
       </div>
 
-      <!-- Live Face Analysis Badge -->
-      <div id="faceScanBadge" class="face-scan-badge pulse-glow">
-        <i data-lucide="scan-face"></i>
-        <span id="faceShapeText">Yüz Taranıyor</span>
+      <!-- Live Face Scan Badge -->
+      <div id="faceScanBadge" class="face-scan-badge">
+        <span class="status-dot"></span>
+        <span id="faceShapeText">Yüz Taranıyor...</span>
       </div>
 
-      <!-- Minimal Utility Icons -->
+      <!-- Header Actions -->
       <div class="header-actions">
         <button id="btnToggleMirror" class="icon-btn active" title="Ayna Modu (Yatay Çevir)">
           <i data-lucide="flip-horizontal"></i>
         </button>
-        <button id="btnToggleRingLight" class="icon-btn" title="Işık Desteği">
+        <button id="btnToggleRingLight" class="icon-btn" title="Banyo Işığı">
           <i data-lucide="sun"></i>
         </button>
       </div>
@@ -56,21 +63,21 @@
         <video id="webcamVideo" playsinline webkit-playsinline muted class="webcam-video"></video>
         <canvas id="arCanvas" class="ar-canvas"></canvas>
 
-        <!-- Laser Scan Animation Line -->
+        <!-- Laser Scan Effect -->
         <div id="scanLaser" class="scan-laser">
           <div class="laser-line"></div>
         </div>
 
-        <!-- Camera Start Prompt -->
+        <!-- Camera Start Overlay -->
         <div id="cameraStartOverlay" class="camera-start-overlay">
           <div class="start-card glass-panel">
             <div class="start-icon-wrapper">
               <i data-lucide="camera"></i>
             </div>
-            <h2>AR Sakal Aynası</h2>
-            <p>Yüz yapınızı tarayalım, sakal hatlarınızı doğrudan yüzünüze oturtalım.</p>
+            <h2>AR Sakal Rehberiniz</h2>
+            <p>Kameranızı açın, yüzünüze tam yapışan milimetrik siyah tıraş rehber çizgilerini anında kullanın.</p>
             
-            <button id="btnStartCamera" class="btn-primary btn-glow">
+            <button id="btnStartCamera" class="btn-primary">
               <i data-lucide="video"></i> Kamerayı Aç ve Taramayı Başlat
             </button>
             <button id="btnDemoMode" class="btn-secondary">
@@ -79,91 +86,41 @@
           </div>
         </div>
 
-        <!-- Floating Minimal Status Toast -->
+        <!-- Floating Toast -->
         <div id="hudOverlay" class="hud-overlay hidden">
           <div id="smartTipToast" class="smart-tip-toast glass-panel">
-            <span id="lockStatusDot" class="status-dot"></span>
-            <span id="smartTipText">Kameraya düz bakın. Yüz hatlarınız taranıyor...</span>
+            <span id="smartTipText">Kameraya düz bakın. Yüz taranıyor...</span>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- Sleek Minimal Control Dock -->
+    <!-- Ultra-Minimal Dock -->
     <footer id="controlDock" class="control-dock glass-panel">
-      <!-- Sakal Stili Karousel -->
-      <div class="style-carousel" id="styleCarousel">
-        <!-- JavaScript ile doldurulacak -->
-      </div>
-
-      <!-- 3 Temel Aksiyon Butonu -->
       <div class="primary-actions-bar">
         <button id="btnToggleLock" class="main-action-btn lock-btn" title="Köpük Modu (Çizgiyi Kilitler)">
           <i data-lucide="lock"></i>
-          <span id="lockBtnText">Köpük Modu (Kilitle)</span>
-        </button>
-
-        <button id="btnToggleZoneMode" class="main-action-btn active" title="Kesim Haritası">
-          <i data-lucide="palette"></i>
-          <span>Bölgeler</span>
+          <span id="lockBtnText">Köpük Modu (Kilitle)</span>
         </button>
 
         <button id="btnCaptureSnapshot" class="main-action-btn capture-btn" title="Fotoğraf Çek">
           <i data-lucide="camera"></i>
-          <span>Fotoğraf</span>
+          <span>Fotoğraf Çek</span>
         </button>
       </div>
     </footer>
 
-    <!-- Analysis Modal -->
-    <div id="analysisModal" class="modal-backdrop hidden">
-      <div class="modal-card glass-panel">
-        <button id="btnCloseAnalysis" class="modal-close-btn">&times;</button>
-        <div class="modal-header">
-          <div class="modal-icon">
-            <i data-lucide="sparkles"></i>
-          </div>
-          <h3>Yüz Yapısı Analiziniz</h3>
-        </div>
-        <div class="modal-body">
-          <div class="analysis-grid">
-            <div class="analysis-stat">
-              <span class="stat-label">Yüz Şekli</span>
-              <span id="modalFaceShape" class="stat-value highlight">Kare</span>
-            </div>
-            <div class="analysis-stat">
-              <span class="stat-label">Oran</span>
-              <span id="modalFaceRatio" class="stat-value">1.18</span>
-            </div>
-            <div class="analysis-stat">
-              <span class="stat-label">Çene</span>
-              <span id="modalJawType" class="stat-value">Keskin</span>
-            </div>
-          </div>
-          <div class="recommendation-box">
-            <h4><i data-lucide="thumbs-up"></i> Önerilen Stil:</h4>
-            <p id="modalRecommendationText">Yüz hatlarınız kare. **Keçi Sakalı (Goatee)** çenenizin keskinliğini vurgulayarak simetrik bir hava katar.</p>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button id="btnApplyRecommendation" class="btn-primary full-width">
-            <i data-lucide="check"></i> Önerilen Stili Uygula
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Snapshot Preview Modal -->
+    <!-- Snapshot Modal -->
     <div id="snapshotModal" class="modal-backdrop hidden">
       <div class="modal-card glass-panel snapshot-card">
         <button id="btnCloseSnapshot" class="modal-close-btn">&times;</button>
-        <h3>Tıraş Rehberi Fotoğrafınız</h3>
+        <h3><i data-lucide="image"></i> Tıraş Rehberi Fotoğrafınız</h3>
         <div class="snapshot-preview-container">
           <img id="snapshotImg" src="" alt="Trimly AR Snapshot" />
         </div>
         <div class="modal-footer row">
           <a id="btnDownloadSnapshot" class="btn-primary" download="trimly-shave-guide.png">
-            <i data-lucide="download"></i> Fotoğrafı İndir
+            <i data-lucide="download"></i> İndir
           </a>
           <button id="btnCloseSnapshotBtn" class="btn-secondary">Kapat</button>
         </div>
