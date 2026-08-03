@@ -1,25 +1,23 @@
 /* ==========================================================================
-   TRIMLY.AR - Precise Fitted A -> B -> C Goatee Line Algorithm
-   A = Nostril Outer Edge (lm[102]/[331])
-   B = Lip Corner Precision Edge (lm[61]/[291] + 8px)
-   C = Extended Chin Point
+   TRIMLY.AR - Extended Trimming Guide Lines (Zero Floating Top Bar)
    ========================================================================== */
 
 export const BEARD_STYLES = [
   {
     id: 'goatee',
     name: 'Mükemmel Keçi Sakalı (Master Goatee)',
-    description: 'Dudak kenarlarına hassas oturan A -> B -> C doğrusal keçi sakalı ve boyun kavis çizgisi.',
+    description: 'Çenenin altına kadar uzanan kesim kılavuz çizgileri ve Adem elması boyun kavisi.',
     icon: 'circle-dot',
     drawGuide: (ctx, lm, options) => {
       const nostrilL = lm[102] || lm[49];   // Point A Left
       const nostrilR = lm[331] || lm[279];  // Point A Right
       const mouthL = lm[61];               // Point B Left
       const mouthR = lm[291];              // Point B Right
-      const chin = lm[152];                // Point C Chin level
+      const lowerLip = lm[17];             // Lower lip bottom
+      const chin = lm[152];                // Point C Chin tip
       const forehead = lm[10];             // Forehead top
 
-      if (!nostrilL || !nostrilR || !mouthL || !mouthR || !chin || !forehead) return;
+      if (!nostrilL || !nostrilR || !mouthL || !mouthR || !chin || !forehead || !lowerLip) return;
 
       const isGold = options.colorMode === 'gold';
       const strokeColor = isGold ? '#FFD700' : '#000000';
@@ -33,9 +31,12 @@ export const BEARD_STYLES = [
       ctx.strokeStyle = strokeColor;
 
       // ----------------------------------------------------------------------
-      // 1. PRECISE A -> B -> C RAY CALCULATION (Exact lip edge margin ~8px)
+      // 1. EXTENDED RAY COMPUTATION (Extends past chin for trimming accuracy)
       // ----------------------------------------------------------------------
-      const edgeMargin = 8 * (window.devicePixelRatio || 1); // Precise ~0.5cm lip clearance
+      const edgeMargin = 8 * (window.devicePixelRatio || 1);
+      // Extend lines past chin level by 35% of chin height so user doesn't miss the line
+      const chinExtension = Math.abs(chin.y - lowerLip.y) * 0.45;
+      const targetChinY = chin.y + chinExtension;
 
       // Point A: Nostril Outer Edges
       const Ax_L = nostrilL.x;
@@ -55,8 +56,7 @@ export const BEARD_STYLES = [
       const Vx_R = Bx_R - Ax_R;
       const Vy_R = By_R - Ay_R || 1;
 
-      // Point C: Ray Extended Down to Chin Level (y = chin.y - 10px)
-      const targetChinY = chin.y - 10;
+      // Point C: Extended past chin level (y = targetChinY)
       const t_L = (targetChinY - Ay_L) / Vy_L;
       const Cx_L = Ax_L + t_L * Vx_L;
       const Cy_L = targetChinY;
@@ -66,25 +66,26 @@ export const BEARD_STYLES = [
       const Cy_R = targetChinY;
 
       // ----------------------------------------------------------------------
-      // 2. DRAW HASSAS KEÇİ SAKALI ÇERÇEVESİ (A -> B -> C -> Bottom Bar)
+      // 2. DRAW LEFT & RIGHT SIDE RAYS (No top bar over nose!)
       // ----------------------------------------------------------------------
+      // Sol Dikey Işın: A_Left -> B_Left -> C_Left (Çene altını geçer)
       ctx.beginPath();
-      // Bıyık üstü yatay çizgi (A_Left -> A_Right)
       ctx.moveTo(Ax_L, Ay_L);
-      ctx.lineTo(Ax_R, Ay_R);
+      ctx.lineTo(Bx_L, By_L);
+      ctx.lineTo(Cx_L, Cy_L);
+      ctx.stroke();
 
-      // Sağ Dikey Işın: A_Right -> B_Right -> C_Right
+      // Sağ Dikey Işın: A_Right -> B_Right -> C_Right (Çene altını geçer)
+      ctx.beginPath();
+      ctx.moveTo(Ax_R, Ay_R);
       ctx.lineTo(Bx_R, By_R);
       ctx.lineTo(Cx_R, Cy_R);
+      ctx.stroke();
 
-      // Alt Yatay Bağlantı Çizgisi: C_Right -> C_Left
-      ctx.lineTo(Cx_L, Cy_L);
-
-      // Sol Dikey Işın: C_Left -> B_Left -> A_Left
-      ctx.lineTo(Bx_L, By_L);
-      ctx.lineTo(Ax_L, Ay_L);
-
-      ctx.closePath();
+      // Alt Yatay Çene Sınır Çizgisi: C_Left -> C_Right
+      ctx.beginPath();
+      ctx.moveTo(Cx_L, Cy_L);
+      ctx.lineTo(Cx_R, Cy_R);
       ctx.stroke();
 
       // ----------------------------------------------------------------------
@@ -96,7 +97,7 @@ export const BEARD_STYLES = [
 
       const unitDirX = dx / faceLen;
       const unitDirY = dy / faceLen;
-      const neckDist = faceLen * 0.15;
+      const neckDist = faceLen * 0.16;
 
       const jawIndices = [172, 136, 150, 149, 176, 148, 152, 377, 378, 379, 365, 397];
 
