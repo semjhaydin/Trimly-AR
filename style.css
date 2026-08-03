@@ -4,7 +4,7 @@
 
 :root {
   --bg-dark: #0A0B0E;
-  --bg-card: rgba(18, 20, 26, 0.85);
+  --bg-card: rgba(18, 20, 26, 0.88);
   --border-glass: rgba(255, 255, 255, 0.1);
   --border-gold: rgba(212, 175, 55, 0.3);
 
@@ -348,10 +348,67 @@ html, body {
 .control-dock {
   position: relative;
   z-index: 10;
-  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 18px;
   background: rgba(10, 11, 14, 0.94);
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-glass);
+}
+
+.style-carousel {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.style-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.style-card {
+  flex: 0 0 95px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.style-card.active {
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.15), rgba(18, 20, 26, 0.9));
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+.style-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
+}
+
+.style-card.active .style-icon {
+  background: var(--accent-gold);
+  color: #0A0B0E;
+}
+
+.style-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.1;
 }
 
 .primary-actions-bar {
@@ -361,7 +418,7 @@ html, body {
 
 .main-action-btn {
   flex: 1;
-  padding: 14px;
+  padding: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -370,7 +427,7 @@ html, body {
   border: 1px solid var(--border-glass);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-main);
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);

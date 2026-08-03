@@ -132,17 +132,14 @@ class TrimlyApp {
       });
     }
 
-    // Ring Light Button
-    const btnRingLight = document.getElementById('btnToggleRingLight');
-    if (btnRingLight) {
-      btnRingLight.addEventListener('click', () => {
+    // Color Toggle Button (Siyah / Altın)
+    const btnToggleColor = document.getElementById('btnToggleColor');
+    if (btnToggleColor) {
+      btnToggleColor.addEventListener('click', () => {
         this.audioCoach.playClick();
-        const ringLight = document.getElementById('ringLightOverlay');
-        if (ringLight) {
-          const isActive = ringLight.classList.toggle('hidden');
-          btnRingLight.classList.toggle('active', !isActive);
-          this.showToast(!isActive ? "💡 Halka Işık Açıldı" : "Işık Kapalı");
-        }
+        this.renderer.lineColorMode = this.renderer.lineColorMode === 'black' ? 'gold' : 'black';
+        btnToggleColor.classList.toggle('active', this.renderer.lineColorMode === 'gold');
+        this.showToast(this.renderer.lineColorMode === 'black' ? '🖤 Renk: Siyah Kılavuz' : '💛 Renk: Altın Kılavuz');
       });
     }
 

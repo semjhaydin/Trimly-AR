@@ -1,5 +1,5 @@
 /* ==========================================================================
-   TRIMLY.AR - AR Canvas Render Engine
+   TRIMLY.AR - High-Precision 60FPS AR Render Engine
    ========================================================================== */
 
 import { BEARD_STYLES } from './beardStyles.js';
@@ -10,15 +10,17 @@ export class ARRenderer {
     this.ctx = this.canvas.getContext('2d');
     this.video = videoElement;
 
-    // Render Options State
+    // Render Settings
     this.currentStyleId = 'goatee';
-    this.isLocked = false; // Köpük / Sabitleme Modu
+    this.isLocked = false;
     this.isMirror = true;
-    this.zoneMode = true;
-    this.lineWidth = 3;
+    this.lineColorMode = 'black'; // 'black' or 'gold'
+    this.zoneMode = false;
+    this.lineWidth = 4;
     this.cheekOffset = 0;
-    this.opacity = 0.85;
+    this.opacity = 1.0;
 
+    this.smoothedLandmarks = null;
     this.lockedPixelLandmarks = null;
     this.currentFrameData = null;
 
@@ -29,74 +31,86 @@ export class ARRenderer {
   resizeCanvas() {
     const parent = this.canvas.parentElement;
     if (parent) {
-      this.canvas.width = parent.clientWidth || window.innerWidth;
-      this.canvas.height = parent.clientHeight || window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      const displayW = parent.clientWidth || window.innerWidth;
+      const displayH = parent.clientHeight || window.innerHeight;
+
+      this.canvas.width = displayW * dpr;
+      this.canvas.height = displayH * dpr;
+      this.canvas.style.width = displayW + 'px';
+      this.canvas.style.height = displayH + 'px';
     }
   }
 
   render(frameData) {
     if (!this.canvas.width || !this.canvas.height) this.resizeCanvas();
-    const ctx = this.ctx;
-    const canvasWidth = this.canvas.width;
-    const canvasHeight = this.canvas.height;
 
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    const ctx = this.ctx;
+    const canvasW = this.canvas.width;
+    const canvasH = this.canvas.height;
+
+    ctx.clearRect(0, 0, canvasW, canvasH);
     ctx.save();
 
-    // Calculate exact aspect ratio scaling for cover mode
-    let videoWidth = this.video.videoWidth || 1280;
-    let videoHeight = this.video.videoHeight || 720;
-    const videoAspect = videoWidth / videoHeight;
-    const canvasAspect = canvasWidth / canvasHeight;
+    // ----------------------------------------------------------------------
+    // 1. EXACT ASPECT RATIO COVER-FIT COMPUTATION (Zero-Sliding Alignment)
+    // ----------------------------------------------------------------------
+    const videoW = this.video.videoWidth || 1280;
+    const videoH = this.video.videoHeight || 720;
 
-    let drawWidth, drawHeight, offsetX, offsetY;
+    const videoAspect = videoW / videoH;
+    const canvasAspect = canvasW / canvasH;
+
+    let renderW, renderH, offsetX, offsetY;
 
     if (canvasAspect > videoAspect) {
-      drawWidth = canvasWidth;
-      drawHeight = canvasWidth / videoAspect;
+      renderW = canvasW;
+      renderH = canvasW / videoAspect;
       offsetX = 0;
-      offsetY = (canvasHeight - drawHeight) / 2;
+      offsetY = (canvasH - renderH) / 2;
     } else {
-      drawWidth = canvasHeight * videoAspect;
-      drawHeight = canvasHeight;
-      offsetX = (canvasWidth - drawWidth) / 2;
+      renderW = canvasH * videoAspect;
+      renderH = canvasH;
+      offsetX = (canvasW - renderW) / 2;
       offsetY = 0;
     }
 
     // Mirror Flip Transform if enabled
     if (this.isMirror) {
-      ctx.translate(canvasWidth, 0);
+      ctx.translate(canvasW, 0);
       ctx.scale(-1, 1);
     }
 
-    // Draw Video Stream aligned to calculated bounds
+    // Draw Video Feed
     if (this.video && this.video.readyState >= 2) {
-      ctx.drawImage(this.video, offsetX, offsetY, drawWidth, drawHeight);
+      ctx.drawImage(this.video, offsetX, offsetY, renderW, renderH);
     } else {
-      const grad = ctx.createRadialGradient(canvasWidth / 2, canvasHeight / 2, 50, canvasWidth / 2, canvasHeight / 2, canvasWidth / 2);
-      grad.addColorStop(0, '#111827');
-      grad.addColorStop(1, '#07090E');
+      const grad = ctx.createRadialGradient(canvasW / 2, canvasH / 2, 50, canvasW / 2, canvasH / 2, canvasW / 2);
+      grad.addColorStop(0, '#1A1C23');
+      grad.addColorStop(1, '#0A0B0E');
       ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      ctx.fillRect(0, 0, canvasW, canvasH);
     }
 
-    // Determine Landmarks with EMA Jitter-Reduction Filter
+    // ----------------------------------------------------------------------
+    // 2. PIXEL-PERFECT LANDMARK TRANSFORMATION & EMA STABILIZER
+    // ----------------------------------------------------------------------
     let pixelLandmarks = null;
 
     if (this.isLocked && this.lockedPixelLandmarks) {
       pixelLandmarks = this.lockedPixelLandmarks;
     } else if (frameData && frameData.landmarks) {
       const rawLandmarks = frameData.landmarks.map((pt) => ({
-        x: offsetX + pt.x * drawWidth,
-        y: offsetY + pt.y * drawHeight,
-        z: (pt.z || 0) * drawWidth
+        x: offsetX + pt.x * renderW,
+        y: offsetY + pt.y * renderH,
+        z: (pt.z || 0) * renderW
       }));
 
-      // Apply Exponential Moving Average (EMA) Stabilizer Filter
+      // EMA Jitter Reduction Filter (Smooths out hand micro-tremors)
       if (!this.smoothedLandmarks || this.smoothedLandmarks.length !== rawLandmarks.length) {
         this.smoothedLandmarks = rawLandmarks;
       } else {
-        const alpha = 0.38; // Ultra-stable smoothing factor
+        const alpha = 0.35; // Optimal balance between zero latency & zero jitter
         this.smoothedLandmarks = rawLandmarks.map((pt, i) => {
           const prev = this.smoothedLandmarks[i];
           return {
@@ -111,17 +125,20 @@ export class ARRenderer {
       this.lockedPixelLandmarks = pixelLandmarks;
     }
 
-    // Render AR Guidelines
+    // ----------------------------------------------------------------------
+    // 3. RENDER AR BEARD GUIDELINES
+    // ----------------------------------------------------------------------
     if (pixelLandmarks) {
       ctx.save();
-      ctx.globalAlpha = 1.0; // 100% solid skin-attached line
+      ctx.globalAlpha = 1.0;
       ctx.shadowBlur = 0;
 
       const activeStyle = BEARD_STYLES.find((s) => s.id === this.currentStyleId) || BEARD_STYLES[0];
-      
+
       activeStyle.drawGuide(ctx, pixelLandmarks, {
+        colorMode: this.lineColorMode,
         zoneMode: this.zoneMode,
-        lineWidth: this.lineWidth,
+        lineWidth: (this.lineWidth || 4) * (window.devicePixelRatio || 1),
         cheekOffset: this.cheekOffset,
         isLocked: this.isLocked
       });
@@ -131,25 +148,6 @@ export class ARRenderer {
 
     ctx.restore();
     this.currentFrameData = frameData;
-  }
-
-  drawSymmetryAxis(ctx, landmarks) {
-    const noseTop = landmarks[10] || landmarks[1];
-    const chin = landmarks[152];
-
-    if (!noseTop || !chin) return;
-
-    ctx.save();
-    ctx.setLineDash([6, 8]);
-    ctx.strokeStyle = 'rgba(0, 210, 255, 0.4)';
-    ctx.lineWidth = 1.5;
-
-    ctx.beginPath();
-    ctx.moveTo(noseTop.x, noseTop.y - 40);
-    ctx.lineTo(chin.x, chin.y + 60);
-    ctx.stroke();
-
-    ctx.restore();
   }
 
   toggleLock() {

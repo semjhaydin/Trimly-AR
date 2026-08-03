@@ -3,14 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Trimly.ar | Minimalist WebAR Sakal Rehberi</title>
+  <title>Trimly.ar | WebAR Sakal Tıraşı Rehberi & Akıllı Ayna</title>
   <meta name="description" content="MediaPipe 3D yüz takibi ve hassas siyah rehber çizgileriyle tarayıcı tabanlı profesyonel sakal tıraş asistanı." />
-  <meta name="theme-color" content="#0D0E12" />
-  
-  <!-- OpenGraph / Social Meta Tags -->
-  <meta property="og:title" content="Trimly.ar | WebAR Sakal Tıraşı Rehberi" />
-  <meta property="og:description" content="Kişisel yüz analizi ve AR siyah tıraş rehber çizgileriyle 0 indirme, %100 ücretsiz dijital ayna." />
-  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#0A0B0E" />
 
   <!-- Google Fonts: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,9 +43,17 @@
 
       <!-- Header Actions -->
       <div class="header-actions">
+        <!-- Renk Modu (Siyah / Altın) -->
+        <button id="btnToggleColor" class="icon-btn active" title="Çizgi Rengi (Siyah / Altın)">
+          <i data-lucide="palette"></i>
+        </button>
+
+        <!-- Ayna Modu -->
         <button id="btnToggleMirror" class="icon-btn active" title="Ayna Modu (Yatay Çevir)">
           <i data-lucide="flip-horizontal"></i>
         </button>
+
+        <!-- Banyo Işığı -->
         <button id="btnToggleRingLight" class="icon-btn" title="Banyo Işığı">
           <i data-lucide="sun"></i>
         </button>
@@ -68,14 +71,14 @@
           <div class="laser-line"></div>
         </div>
 
-        <!-- Camera Start Overlay -->
+        <!-- Camera Start Prompt Card -->
         <div id="cameraStartOverlay" class="camera-start-overlay">
           <div class="start-card glass-panel">
             <div class="start-icon-wrapper">
               <i data-lucide="camera"></i>
             </div>
             <h2>AR Sakal Rehberiniz</h2>
-            <p>Kameranızı açın, yüzünüze tam yapışan milimetrik siyah tıraş rehber çizgilerini anında kullanın.</p>
+            <p>Kameranızı açın, yüzünüze 3B oturan profesyonel tıraş rehber çizgilerini anında kullanın.</p>
             
             <button id="btnStartCamera" class="btn-primary">
               <i data-lucide="video"></i> Kamerayı Aç ve Taramayı Başlat
@@ -95,8 +98,14 @@
       </div>
     </main>
 
-    <!-- Ultra-Minimal Dock -->
+    <!-- Minimal Dock -->
     <footer id="controlDock" class="control-dock glass-panel">
+      <!-- Sakal Stilleri Karousel -->
+      <div class="style-carousel" id="styleCarousel">
+        <!-- JS ile doldurulacak -->
+      </div>
+
+      <!-- Aksiyon Barı -->
       <div class="primary-actions-bar">
         <button id="btnToggleLock" class="main-action-btn lock-btn" title="Köpük Modu (Çizgiyi Kilitler)">
           <i data-lucide="lock"></i>
