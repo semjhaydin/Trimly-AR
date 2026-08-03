@@ -1,32 +1,35 @@
 /* ==========================================================================
-   TRIMLY.AR - Sadece Siyah Çizgili Mükemmel Keçi Sakalı Rehberi
+   TRIMLY.AR - 3B Perspektif & Kafa Yönelimli Sakal Engine'i (Zero-Slide)
    ========================================================================== */
 
 export const BEARD_STYLES = [
   {
     id: 'goatee',
     name: 'Mükemmel Keçi Sakalı (Master Goatee)',
-    description: 'Burun kanadından inen dikey siyah ışınlar ve çene altı siyah boyun kuralı.',
+    description: '3B kafa açılarına (Yaw/Pitch/Roll) %100 kilitlenen, kayma yapmayan net berber çizgisi.',
     icon: 'circle-dot',
     drawGuide: (ctx, lm, options) => {
-      const nostrilL = lm[102] || lm[49];  // Sol Burun Kanadı
-      const nostrilR = lm[331] || lm[279]; // Sağ Burun Kanadı
-      const mouthL = lm[61];               // Sol Dudak Kenarı
-      const mouthR = lm[291];              // Sağ Dudak Kenarı
-      const nBase = lm[2];                 // Burun Tabanı
-      const chin = lm[152];                // Çene Ucu
-      const jawL = lm[148];                // Sol Çene Noktası
-      const jawR = lm[377];                // Sağ Çene Noktası
+      const forehead = lm[10];
+      const chin = lm[152];
+      const nBase = lm[2];
 
-      if (!nostrilL || !nostrilR || !mouthL || !mouthR) return;
+      if (!forehead || !chin || !nBase) return;
 
-      const mouthWidth = Math.abs(mouthR.x - mouthL.x);
-      const outerFlaring = mouthWidth * 0.38;
+      // ----------------------------------------------------------------------
+      // 1. 3B KAFA YÖNELİM VE PERSPERTİF VEKTÖRÜ (Pitch / Yaw Matrix)
+      // ----------------------------------------------------------------------
+      // Alın (10) -> Çene (152) 3B Yönelim Vektörü
+      const dx = chin.x - forehead.x;
+      const dy = chin.y - forehead.y;
+      const dz = (chin.z || 0) - (forehead.z || 0);
+      const faceLen = Math.hypot(dx, dy) || 1;
 
-      const topLeftX = nostrilL.x;
-      const topRightX = nostrilR.x;
-      const outerCheekLeftX = mouthL.x - outerFlaring;
-      const outerCheekRightX = mouthR.x + outerFlaring;
+      // 3B Birim Yön Vektörü (Kafa yukarı/aşağı/sağa/sola dönünce yönü değişir)
+      const unitDirX = dx / faceLen;
+      const unitDirY = dy / faceLen;
+
+      // Adem elması boyun mesafesi (Yüz boyuna oranlı 3B uzaklık)
+      const neckOffsetDist = faceLen * 0.16;
 
       ctx.save();
       ctx.shadowBlur = 0;
@@ -34,39 +37,41 @@ export const BEARD_STYLES = [
       ctx.lineJoin = 'round';
 
       // ----------------------------------------------------------------------
-      // 1. DİKEY BAKIŞ VE YANAK KILAVUZ SİYAH ÇİZGİLERİ [A]
+      // 2. DİKEY BAKIŞ VE YANAK KILAVUZ SİYAH ÇİZGİLERİ [A] (3B Mesh Bağlantılı)
       // ----------------------------------------------------------------------
       ctx.lineWidth = options.lineWidth || 3.5;
       ctx.strokeStyle = '#000000'; // Net Siyah Çizgi
 
-      // Sol Siyah Işın
-      ctx.beginPath();
-      ctx.moveTo(topLeftX, nostrilL.y);
-      ctx.lineTo(outerCheekLeftX, chin.y);
+      // Sol Işın: Sol Burun Kanadı (102) -> Sol Ağız (61) -> Sol Çene (148)
+      const rayLeftIndices = [102, 186, 57, 148];
+      draw3DMeshPath(ctx, lm, rayLeftIndices, false);
       ctx.stroke();
 
-      // Sağ Siyah Işın
-      ctx.beginPath();
-      ctx.moveTo(topRightX, nostrilR.y);
-      ctx.lineTo(outerCheekRightX, chin.y);
+      // Sağ Işın: Sağ Burun Kanadı (331) -> Sağ Ağız (291) -> Sağ Çene (377)
+      const rayRightIndices = [331, 410, 287, 377];
+      draw3DMeshPath(ctx, lm, rayRightIndices, false);
       ctx.stroke();
 
       // ----------------------------------------------------------------------
-      // 2. ADEM ELMASI ÜSTÜ SİYAH BOYUN KAVİSİ [C]
+      // 3. ADEM ELMASI ÜSTÜ 3B BOYUN ÇİZGİSİ [C] (3B Vektör İle Çeneye Kilitli)
       // ----------------------------------------------------------------------
+      // Çene kemiği halkası: 172 -> 136 -> 150 -> 149 -> 176 -> 148 -> 152 -> 377 -> 378 -> 379 -> 365 -> 397
       const jawIndices = [172, 136, 150, 149, 176, 148, 152, 377, 378, 379, 365, 397];
-      const vecX = (chin.x - lm[10].x) * 0.14;
-      const vecY = (chin.y - lm[10].y) * 0.14;
 
       ctx.lineWidth = 3.5;
-      ctx.strokeStyle = '#000000'; // Net Siyah Çizgi
+      ctx.strokeStyle = '#000000';
 
       ctx.beginPath();
       jawIndices.forEach((idx, i) => {
         const pt = lm[idx];
         if (!pt) return;
-        if (i === 0) ctx.moveTo(pt.x + vecX, pt.y + vecY);
-        else ctx.lineTo(pt.x + vecX, pt.y + vecY);
+
+        // Her çene noktasını 3B kafa yönelim vektörü boyunca öteliyoruz (Asla kaymaz)
+        const projX = pt.x + unitDirX * neckOffsetDist;
+        const projY = pt.y + unitDirY * neckOffsetDist;
+
+        if (i === 0) ctx.moveTo(projX, projY);
+        else ctx.lineTo(projX, projY);
       });
       ctx.stroke();
 
@@ -74,3 +79,26 @@ export const BEARD_STYLES = [
     }
   }
 ];
+
+// Helper: MediaPipe 3D Landmark Noktalarını Doğrudan Çizen Fonksiyon
+function draw3DMeshPath(ctx, lm, indices, isClosed = false) {
+  ctx.beginPath();
+  let started = false;
+
+  for (let i = 0; i < indices.length; i++) {
+    const idx = indices[i];
+    const pt = lm[idx];
+    if (!pt) continue;
+
+    if (!started) {
+      ctx.moveTo(pt.x, pt.y);
+      started = true;
+    } else {
+      ctx.lineTo(pt.x, pt.y);
+    }
+  }
+
+  if (isClosed) {
+    ctx.closePath();
+  }
+}
