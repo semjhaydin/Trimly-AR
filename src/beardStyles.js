@@ -1,66 +1,110 @@
 /* ==========================================================================
-   TRIMLY.AR - 3B Yüz Dönüşüne %100 Uyumlu AR Çizgi Motoru (3D Mesh Snapped)
+   TRIMLY.AR - Burun Kanadından Dudak Kenarına Işın İzleme (Ray Tracing) Sakal Engine'i
    ========================================================================== */
 
 export const BEARD_STYLES = [
   {
     id: 'goatee',
-    name: 'Mükemmel Keçi Sakalı (Master Goatee)',
-    description: 'Kafanın 3B dönme ve eğilme hareketlerine %100 yapışan, ağzı kapatmayan gerçekçi berber çizgisi.',
+    name: 'Mükemmel Keçi Sakalı (Ray-Traced Master Goatee)',
+    description: 'Burun kanadından dudak kenarlarına uzanan ışınların çenede birleşmesiyle oluşan kusursuz simetrik keçi sakalı.',
     icon: 'circle-dot',
     drawGuide: (ctx, lm, options) => {
-      // MediaPipe 3D Landmark Indices
-      // Bıyık üstü: 164, 0, 37, 39, 267, 269
-      // Sol bıyık & yanak: 61, 186, 57, 216, 148
-      // Sağ bıyık & yanak: 291, 410, 287, 436, 377
-      // Çene ucu: 152, 175, 200
-      // Çene kemiği halkası: 172, 136, 150, 149, 176, 148, 152, 377, 378, 379, 365, 397
+      // ----------------------------------------------------------------------
+      // 1. BURUN KANADINDAN DUDAK KENARINA IŞIN (RAY TRACING) GEOMETRİSİ
+      // ----------------------------------------------------------------------
+      const nostrilL = lm[102] || lm[49];  // Sol Burun Kanadı
+      const nostrilR = lm[331] || lm[279]; // Sağ Burun Kanadı
+      const mouthL = lm[61];               // Sol Dudak Kenarı
+      const mouthR = lm[291];              // Sağ Dudak Kenarı
+      const nBase = lm[2];                 // Burun Tabanı
+      const chin = lm[152];                // Çene Ucu
+
+      if (!nostrilL || !nostrilR || !mouthL || !mouthR) return;
+
+      // Sol Işın Vektörü (Burun Kanadından Dudak Kenarına Doğru İnen Işın)
+      const rayLVectorX = mouthL.x - nostrilL.x;
+      const rayLVectorY = mouthL.y - nostrilL.y;
+
+      // Sağ Işın Vektörü
+      const rayRVectorX = mouthR.x - nostrilR.x;
+      const rayRVectorY = mouthR.y - nostrilR.y;
+
+      // Işınların Devam Ederek Çeneye İnen Kesim Noktaları (Ray Extension to Jaw)
+      const rayExtendScale = 1.75; // Işının çene hattına kadar uzama katsayısı
+      const jawIntersectL = {
+        x: nostrilL.x + rayLVectorX * rayExtendScale,
+        y: nostrilL.y + rayLVectorY * rayExtendScale
+      };
+      const jawIntersectR = {
+        x: nostrilR.x + rayRVectorX * rayExtendScale,
+        y: nostrilR.y + rayRVectorY * rayExtendScale
+      };
 
       ctx.save();
       ctx.shadowBlur = 0;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // 1. KEÇİ SAKALI DIŞ KONTUR HATTI (3B Nokta Nokta Yüze Yapışan Çizgi)
+      // ----------------------------------------------------------------------
+      // 2. REFERANS IŞIN ÇİZGİLERİ (Nostril -> Mouth -> Jaw Ray Visualizers)
+      // ----------------------------------------------------------------------
+      ctx.save();
+      ctx.setLineDash([4, 6]);
+      ctx.strokeStyle = 'rgba(247, 244, 235, 0.45)';
+      ctx.lineWidth = 1.5;
+
+      // Sol Işın
+      ctx.beginPath();
+      ctx.moveTo(nostrilL.x, nostrilL.y);
+      ctx.lineTo(jawIntersectL.x, jawIntersectL.y);
+      ctx.stroke();
+
+      // Sağ Işın
+      ctx.beginPath();
+      ctx.moveTo(nostrilR.x, nostrilR.y);
+      ctx.lineTo(jawIntersectR.x, jawIntersectR.y);
+      ctx.stroke();
+      ctx.restore();
+
+      // ----------------------------------------------------------------------
+      // 3. IŞINLARIN ÇENEDE OLUŞTURDUĞU MÜKEMMEL GOATEE ÇİZGİSİ
+      // ----------------------------------------------------------------------
       ctx.lineWidth = options.lineWidth || 3.5;
       ctx.strokeStyle = '#D4AF37'; // Mat Berber Altını
 
-      // Bıyık Üst Sınırı + Sol/Sağ Yanak İnişi + Çene Altı Birleşimi
-      const goateeIndices = [
-        61, 186, 57, 216, 148, 176, 152, 378, 377, 436, 287, 410, 291, 0, 164
-      ];
+      ctx.beginPath();
+      // Burun altından Bıyık Üst Sınırı boyunca başla
+      ctx.moveTo(nostrilL.x, nBase.y - 2);
+      ctx.lineTo(nostrilR.x, nBase.y - 2);
 
-      draw3DMeshPath(ctx, lm, goateeIndices, true);
+      // Sağ Işın Hattını Takip Et (Burun Kanadı -> Dudak Kenarı -> Çene Noktası)
+      ctx.lineTo(mouthR.x + (mouthR.x - nostrilR.x) * 0.2, mouthR.y);
+      ctx.lineTo(jawIntersectR.x, jawIntersectR.y);
+
+      // Çenede Işınların Birleştiği Alt Kavis (Çene Altı Birleşimi)
+      ctx.quadraticCurveTo(chin.x, chin.y + 6, jawIntersectL.x, jawIntersectL.y);
+
+      // Sol Işın Hattını Takip Et (Çene Noktası -> Dudak Kenarı -> Burun Kanadı)
+      ctx.lineTo(mouthL.x - (nostrilL.x - mouthL.x) * 0.2, mouthL.y);
+      ctx.lineTo(nostrilL.x, nBase.y - 2);
+      ctx.closePath();
       ctx.stroke();
 
-      // Bıyık Üst Çizgisi
-      const mustacheTopIndices = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291];
-      ctx.lineWidth = 2.5;
-      ctx.strokeStyle = '#D4AF37';
-      draw3DMeshPath(ctx, lm, mustacheTopIndices, false);
-      ctx.stroke();
-
-      // 2. ADEM ELMASI ÜSTÜ BOYUN ÇİZGİSİ (Kafa Dönüşüne Tam Uyumlu 3B Kavis)
-      // Çene kemiği landmark'larını başın yönüne göre aşağı offsetleyerek çiziyoruz
+      // ----------------------------------------------------------------------
+      // 4. ADEM ELMASI ÜSTÜ BOYUN KAVİSİ (3B Dönüş Uyumlu)
+      // ----------------------------------------------------------------------
       const jawIndices = [172, 136, 150, 149, 176, 148, 152, 377, 378, 379, 365, 397];
-      
-      // Kafa eğim ve uzaklık vektörü
-      const forehead = lm[10];
-      const chin = lm[152];
-      const vecX = (chin.x - forehead.x) * 0.14;
-      const vecY = (chin.y - forehead.y) * 0.14;
+      const vecX = (chin.x - lm[10].x) * 0.14;
+      const vecY = (chin.y - lm[10].y) * 0.14;
 
       ctx.lineWidth = 3;
-      ctx.strokeStyle = '#F7F4EB'; // Krem Beyaz Net Boyun Hattı
-
+      ctx.strokeStyle = '#F7F4EB';
       ctx.beginPath();
       jawIndices.forEach((idx, i) => {
         const pt = lm[idx];
         if (!pt) return;
-        const px = pt.x + vecX;
-        const py = pt.y + vecY;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+        if (i === 0) ctx.moveTo(pt.x + vecX, pt.y + vecY);
+        else ctx.lineTo(pt.x + vecX, pt.y + vecY);
       });
       ctx.stroke();
 
@@ -78,17 +122,14 @@ export const BEARD_STYLES = [
       ctx.lineWidth = options.lineWidth || 3;
       ctx.strokeStyle = '#D4AF37';
 
-      // Sol Yanak 3B Çizgisi (Kulağın yanından ağız kenarına)
       const leftCheekIndices = [234, 93, 132, 58, 172, 136, 150, 61];
       draw3DMeshPath(ctx, lm, leftCheekIndices, false);
       ctx.stroke();
 
-      // Sağ Yanak 3B Çizgisi
       const rightCheekIndices = [454, 323, 361, 288, 397, 365, 379, 291];
       draw3DMeshPath(ctx, lm, rightCheekIndices, false);
       ctx.stroke();
 
-      // Boyun Çizgisi
       const jawIndices = [172, 136, 150, 149, 176, 148, 152, 377, 378, 379, 365, 397];
       const vecX = (lm[152].x - lm[10].x) * 0.12;
       const vecY = (lm[152].y - lm[10].y) * 0.12;
@@ -171,7 +212,6 @@ export const BEARD_STYLES = [
   }
 ];
 
-// Helper: MediaPipe 3D Landmark Noktalarını Birleştirip Path Çizen Fonksiyon
 function draw3DMeshPath(ctx, lm, indices, isClosed = false) {
   ctx.beginPath();
   let started = false;
