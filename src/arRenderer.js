@@ -80,19 +80,34 @@ export class ARRenderer {
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     }
 
-    // Determine Landmarks (Pixel-perfect mapping to video frame position)
+    // Determine Landmarks with EMA Jitter-Reduction Filter
     let pixelLandmarks = null;
 
     if (this.isLocked && this.lockedPixelLandmarks) {
       pixelLandmarks = this.lockedPixelLandmarks;
     } else if (frameData && frameData.landmarks) {
-      pixelLandmarks = frameData.landmarks.map((pt) => ({
+      const rawLandmarks = frameData.landmarks.map((pt) => ({
         x: offsetX + pt.x * drawWidth,
         y: offsetY + pt.y * drawHeight,
         z: (pt.z || 0) * drawWidth
       }));
 
-      // Cache for lock mode
+      // Apply Exponential Moving Average (EMA) Stabilizer Filter
+      if (!this.smoothedLandmarks || this.smoothedLandmarks.length !== rawLandmarks.length) {
+        this.smoothedLandmarks = rawLandmarks;
+      } else {
+        const alpha = 0.38; // Ultra-stable smoothing factor
+        this.smoothedLandmarks = rawLandmarks.map((pt, i) => {
+          const prev = this.smoothedLandmarks[i];
+          return {
+            x: prev.x * (1 - alpha) + pt.x * alpha,
+            y: prev.y * (1 - alpha) + pt.y * alpha,
+            z: prev.z * (1 - alpha) + pt.z * alpha
+          };
+        });
+      }
+
+      pixelLandmarks = this.smoothedLandmarks;
       this.lockedPixelLandmarks = pixelLandmarks;
     }
 
